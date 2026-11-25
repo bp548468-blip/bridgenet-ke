@@ -1,13 +1,7 @@
-# SkillBridge AI roadmap
+# BridgeNet roadmap
 
-- [ ] Database: profiles, qualifications, CVs, checklist progress, opportunity resources (with RLS)
-- [ ] Sign up / log in / log out / password reset (email, Google, Lovable)
-- [ ] App layout + dashboard
-- [ ] Profile page
-- [ ] Qualifications (add / edit / delete / status)
-- [ ] CV builder (AI + non-AI template, save, print)
-- [ ] AI skills assistant
-- [ ] Recognition guide with saved checklist
-- [ ] Opportunity hub with filters
-- [ ] Answer: what is the folder name
-- [ ] Step-by-step testing guide for the user
+- [ ] Build the four-tab BridgeNet experience: Home, Matching Engine, Mentor Tracker, Returnship Marketplace
+- [ ] Connect every button to its requested interaction and confirmation
+- [ ] Add responsive styling and page metadata using burgundy and teal
+- [ ] Test matching, applications, mentor progress, messaging, trials, and the job offer
+- [ ] Give the user a short step-by-step testing guide
