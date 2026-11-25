@@ -24,7 +24,16 @@ import {
   WalletCards,
   type LucideIcon,
 } from "lucide-react";
-import { useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from "react";
+import {
+  findJob,
+  findTrial,
+  matchJobs,
+  offerText,
+  trialCatalog,
+  type JobCategory,
+  type JobMatch,
+} from "@/lib/matching";
+import { useMemo, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -75,65 +84,11 @@ const tabs: Array<{ id: TabId; label: string; icon: LucideIcon }> = [
   { id: "marketplace", label: "Returnship Marketplace", icon: BriefcaseBusiness },
 ];
 
-const jobs = [
-  {
-    id: "clinic-nurse",
-    title: "Clinic Nurse",
-    organisation: "Garissa Hospital",
-    location: "Garissa, Kenya",
-    match: 92,
-    salary: "KES 45,000",
-    icon: Hospital,
-  },
-  {
-    id: "data-entry",
-    title: "Data Entry",
-    organisation: "Nairobi",
-    location: "Nairobi, Kenya",
-    match: 86,
-    salary: "KES 30,000",
-    icon: FileCheck2,
-  },
-  {
-    id: "junior-developer",
-    title: "Junior Developer",
-    organisation: "Mombasa",
-    location: "Mombasa, Kenya",
-    match: 78,
-    salary: "KES 50,000",
-    icon: BriefcaseBusiness,
-  },
-];
-
-const trials = [
-  {
-    id: "clinic-assistant",
-    title: "2-Week Clinic Assistant",
-    salary: "KES 15,000",
-    organisation: "Garissa Hospital",
-    location: "Garissa",
-    schedule: "2 weeks · Full-time",
-    icon: Hospital,
-  },
-  {
-    id: "data-entry-trial",
-    title: "2-Week Data Entry",
-    salary: "KES 12,000",
-    organisation: "Nairobi Business Hub",
-    location: "Nairobi",
-    schedule: "2 weeks · Hybrid",
-    icon: FileCheck2,
-  },
-  {
-    id: "developer-trial",
-    title: "4-Week Junior Developer",
-    salary: "KES 25,000",
-    organisation: "Coast Digital Works",
-    location: "Mombasa",
-    schedule: "4 weeks · Hybrid",
-    icon: BriefcaseBusiness,
-  },
-];
+const categoryIcon: Record<JobCategory, LucideIcon> = {
+  health: Hospital,
+  admin: FileCheck2,
+  tech: BriefcaseBusiness,
+};
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "light" | "success";
@@ -395,6 +350,7 @@ function MatchingPanel({
   profile,
   profileLoaded,
   showMatches,
+  matches,
   applications,
   onProfileChange,
   onFindMatches,
@@ -403,6 +359,7 @@ function MatchingPanel({
   profile: Profile;
   profileLoaded: boolean;
   showMatches: boolean;
+  matches: JobMatch[];
   applications: Record<string, boolean>;
   onProfileChange: (field: keyof Profile, value: string) => void;
   onFindMatches: () => void;
@@ -502,7 +459,7 @@ function MatchingPanel({
             </h2>
             {showMatches && (
               <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">
-                3 roles found
+                {matches.length} {matches.length === 1 ? "role" : "roles"} found
               </span>
             )}
           </div>
@@ -517,10 +474,21 @@ function MatchingPanel({
                 Complete your profile, then select “Find My Matches” to see roles chosen for you.
               </p>
             </div>
+          ) : matches.length === 0 ? (
+            <div className="flex min-h-[420px] flex-col items-center justify-center rounded-3xl border border-dashed border-secondary/40 bg-accent/35 p-8 text-center" role="status">
+              <div className="flex size-16 items-center justify-center rounded-full bg-card text-secondary-dark shadow-sm">
+                <Target className="size-7" />
+              </div>
+              <h3 className="mt-5 font-display text-2xl font-semibold">No matching roles yet</h3>
+              <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">
+                We only show jobs that fit your target role and skills. Try adding more skills or a different target role.
+              </p>
+            </div>
           ) : (
             <div className="space-y-4">
-              {jobs.map((job) => {
+              {matches.map((job) => {
                 const applied = Boolean(applications[job.id]);
+                const JobIcon = categoryIcon[job.category];
                 return (
                   <article
                     key={job.id}
@@ -528,7 +496,7 @@ function MatchingPanel({
                   >
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                       <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-highlight text-primary">
-                        <job.icon className="size-5" />
+                        <JobIcon className="size-5" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -590,7 +558,8 @@ function MentorPanel({
   onCompleteTask: () => void;
   onMessage: () => void;
 }) {
-  const tasks = [
+  const [openTask, setOpenTask] = useState<string | null>(null);
+  const tasks: Array<{ title: string; description: string; status: string; details?: string[] }> = [
     {
       title: "CV Review",
       description: "Position Amina’s international experience for Kenyan employers.",
@@ -599,6 +568,13 @@ function MentorPanel({
     {
       title: "Mock Interview",
       description: "Practise confident answers with real interview feedback.",
+      details: [
+        "Format: 30-minute video call with Grace, Thursday 10:00 AM.",
+        "Prepare: a 1-minute introduction about your background and why you want this role.",
+        "Practise: 3 common questions — your strengths, a challenge you solved, and why you chose Kenya.",
+        "Bring: your updated CV and one question to ask the employer.",
+        "After: Grace shares written feedback; then select “Mark Task Complete”.",
+      ],
       status: progress >= 80 ? "Done" : "In Progress",
     },
     {
@@ -734,7 +710,20 @@ function MentorPanel({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-bold">{task.title}</h3>
+                        {task.details ? (
+                          <h3 className="text-sm font-bold">
+                            <button
+                              type="button"
+                              onClick={() => setOpenTask(openTask === task.title ? null : task.title)}
+                              aria-expanded={openTask === task.title}
+                              className="cursor-pointer text-left underline decoration-secondary decoration-2 underline-offset-4 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                            >
+                              {task.title}
+                            </button>
+                          </h3>
+                        ) : (
+                          <h3 className="text-sm font-bold">{task.title}</h3>
+                        )}
                         <span
                           className={cn(
                             "rounded-full px-2 py-0.5 text-[10px] font-bold",
@@ -749,6 +738,16 @@ function MentorPanel({
                         </span>
                       </div>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">{task.description}</p>
+                      {task.details && openTask === task.title && (
+                        <div className="mt-3 rounded-xl border border-secondary/30 bg-accent/40 p-3" role="region" aria-label={`${task.title} instructions`}>
+                          <p className="text-xs font-bold text-secondary-dark">How to prepare</p>
+                          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-foreground">
+                            {task.details.map((d) => (
+                              <li key={d}>{d}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -778,6 +777,8 @@ function MentorPanel({
 }
 
 function MarketplacePanel({
+  trials,
+  offerJob,
   applications,
   offerVisible,
   offerAccepted,
@@ -785,6 +786,8 @@ function MarketplacePanel({
   onToggleOffer,
   onAcceptOffer,
 }: {
+  trials: typeof trialCatalog;
+  offerJob: ReturnType<typeof findJob>;
   applications: Record<string, boolean>;
   offerVisible: boolean;
   offerAccepted: boolean;
@@ -803,6 +806,8 @@ function MarketplacePanel({
       <div className="grid gap-5 lg:grid-cols-3">
         {trials.map((trial) => {
           const applied = Boolean(applications[trial.id]);
+          const trialJob = findJob(trial.jobId);
+          const TrialIcon = categoryIcon[trialJob?.category ?? "tech"];
           return (
             <article
               key={trial.id}
@@ -810,7 +815,7 @@ function MarketplacePanel({
             >
               <div className="flex items-start justify-between bg-highlight/60 p-6">
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-card text-primary shadow-sm">
-                  <trial.icon className="size-5" />
+                  <TrialIcon className="size-5" />
                 </div>
                 <span className="rounded-full bg-card px-3 py-1 text-[10px] font-bold tracking-wider text-primary uppercase">
                   Paid returnship
@@ -874,7 +879,14 @@ function MarketplacePanel({
           </Button>
         </div>
 
-        {offerVisible && (
+        {offerVisible && !offerJob && (
+          <div className="border-t border-primary-foreground/15 bg-primary-foreground/8 p-5 sm:p-7">
+            <p className="rounded-2xl bg-primary-foreground p-6 text-sm font-semibold text-foreground" role="status">
+              No offer yet. Apply for a job or paid trial first — your offer will be for that exact role.
+            </p>
+          </div>
+        )}
+        {offerVisible && offerJob && (
           <div className="border-t border-primary-foreground/15 bg-primary-foreground/8 p-5 sm:p-7">
             <div className="flex flex-col gap-5 rounded-2xl bg-primary-foreground p-6 text-foreground sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-4">
@@ -886,7 +898,7 @@ function MarketplacePanel({
                     {offerAccepted ? "You did it" : "Your matched offer"}
                   </p>
                   <h3 className="mt-1 font-display text-xl font-semibold sm:text-2xl">
-                    Offer: Full-Time Nurse KES 45,000/month - Accept?
+                    {offerText(offerJob)}
                   </h3>
                   {offerAccepted && (
                     <p className="mt-2 text-sm font-semibold text-success" role="status">
@@ -923,7 +935,19 @@ export function BridgeNetApp() {
   const [messageSent, setMessageSent] = useState(false);
   const [trialApplications, setTrialApplications] = useState<Record<string, boolean>>({});
   const [offerVisible, setOfferVisible] = useState(false);
-  const [offerAccepted, setOfferAccepted] = useState(false);
+  const [acceptedOffers, setAcceptedOffers] = useState<Record<string, boolean>>({});
+  const [offerJobId, setOfferJobId] = useState<string | null>(null);
+  const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
+
+  const matches = useMemo(
+    () => (matchedProfile ? matchJobs(matchedProfile.role, matchedProfile.skills) : []),
+    [matchedProfile],
+  );
+  const visibleTrials = matchedProfile
+    ? trialCatalog.filter((t) => matches.some((m) => m.id === t.jobId))
+    : trialCatalog;
+  const offerJob = findJob(offerJobId);
+  const offerAccepted = Boolean(offerJobId && acceptedOffers[offerJobId]);
 
   const navigateTo = (tab: TabId) => setActiveTab(tab);
 
@@ -1026,10 +1050,17 @@ export function BridgeNetApp() {
               profile={profile}
               profileLoaded={profileLoaded}
               showMatches={showMatches}
+              matches={matches}
               applications={jobApplications}
               onProfileChange={updateProfile}
-              onFindMatches={() => setShowMatches(true)}
-              onApply={(jobId) => setJobApplications((current) => ({ ...current, [jobId]: true }))}
+              onFindMatches={() => {
+                setMatchedProfile({ ...profile });
+                setShowMatches(true);
+              }}
+              onApply={(jobId) => {
+                setJobApplications((current) => ({ ...current, [jobId]: true }));
+                setOfferJobId(jobId);
+              }}
             />
           )}
           {activeTab === "mentor" && (
@@ -1042,12 +1073,20 @@ export function BridgeNetApp() {
           )}
           {activeTab === "marketplace" && (
             <MarketplacePanel
+              trials={visibleTrials}
+              offerJob={offerJob}
               applications={trialApplications}
               offerVisible={offerVisible}
               offerAccepted={offerAccepted}
-              onApply={(trialId) => setTrialApplications((current) => ({ ...current, [trialId]: true }))}
+              onApply={(trialId) => {
+                setTrialApplications((current) => ({ ...current, [trialId]: true }));
+                const trial = findTrial(trialId);
+                if (trial) setOfferJobId(trial.jobId);
+              }}
               onToggleOffer={() => setOfferVisible((current) => !current)}
-              onAcceptOffer={() => setOfferAccepted(true)}
+              onAcceptOffer={() => {
+                if (offerJobId) setAcceptedOffers((current) => ({ ...current, [offerJobId]: true }));
+              }}
             />
           )}
         </div>

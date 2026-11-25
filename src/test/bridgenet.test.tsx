@@ -17,14 +17,9 @@ describe("BridgeNet", () => {
 
     expect(screen.getByText("Clinic Nurse")).toBeInTheDocument();
     expect(screen.getByText("Garissa Hospital")).toBeInTheDocument();
-    expect(screen.getByText("92% Match")).toBeInTheDocument();
+    expect(screen.getByText(/% Match$/)).toBeInTheDocument();
     expect(screen.getByText("KES 45,000")).toBeInTheDocument();
-    expect(screen.getByText("Data Entry")).toBeInTheDocument();
-    expect(screen.getByText("86% Match")).toBeInTheDocument();
-    expect(screen.getByText("KES 30,000")).toBeInTheDocument();
-    expect(screen.getByText("Junior Developer")).toBeInTheDocument();
-    expect(screen.getByText("78% Match")).toBeInTheDocument();
-    expect(screen.getByText("KES 50,000")).toBeInTheDocument();
+    expect(screen.queryByText("Junior Developer")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Apply for Clinic Nurse" }));
     expect(screen.getByText("Application Sent!")).toBeInTheDocument();
@@ -39,6 +34,9 @@ describe("BridgeNet", () => {
     expect(screen.getByText("Senior Nurse")).toBeInTheDocument();
     expect(screen.getByText("Nairobi Hospital")).toBeInTheDocument();
     expect(screen.getByText("60%")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mock Interview" }));
+    expect(screen.getByRole("region", { name: "Mock Interview instructions" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Mark Task Complete" }));
     expect(screen.getByText("80%")).toBeInTheDocument();
@@ -73,7 +71,7 @@ describe("BridgeNet", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "View My Offer" }));
     expect(
-      screen.getByText("Offer: Full-Time Nurse KES 45,000/month - Accept?"),
+      screen.getByText("Offer: Full-Time Clinic Nurse KES 45,000/month - Accept?"),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Accept Offer" }));
@@ -96,5 +94,34 @@ describe("BridgeNet", () => {
       "aria-selected",
       "true",
     );
+  });
+
+  it("matches a software developer only to developer work and offers that exact job", () => {
+    render(<BridgeNetApp />);
+    fireEvent.click(screen.getByRole("button", { name: "I am Talent" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Beatrice" } });
+    fireEvent.change(screen.getByLabelText("Target Role"), {
+      target: { value: "Junior Software Developer" },
+    });
+    fireEvent.change(screen.getByLabelText(/Skills/), {
+      target: { value: "Python, HTML, CSS, JavaScript, Git, GitHub, Problem Solving" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Find My Matches" }));
+
+    expect(screen.getByText("Junior Developer")).toBeInTheDocument();
+    expect(screen.queryByText("Clinic Nurse")).not.toBeInTheDocument();
+    expect(screen.queryByText("Data Entry")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Apply for Junior Developer" }));
+
+    fireEvent.click(screen.getByRole("tab", { name: "Returnship Marketplace" }));
+    expect(screen.queryByText("2-Week Clinic Assistant")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Apply for Trial: 4-Week Junior Developer" }));
+    fireEvent.click(screen.getByRole("button", { name: "View My Offer" }));
+    expect(
+      screen.getByText("Offer: Full-Time Junior Developer KES 50,000/month - Accept?"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Nurse/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Accept Offer" }));
+    expect(screen.getByText("Offer Accepted! Welcome to the team.")).toBeInTheDocument();
   });
 });
