@@ -100,6 +100,7 @@ describe("BridgeNet", () => {
     render(<BridgeNetApp />);
     fireEvent.click(screen.getByRole("button", { name: "I am Talent" }));
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Beatrice" } });
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "Kenya" } });
     fireEvent.change(screen.getByLabelText("Target Role"), {
       target: { value: "Junior Software Developer" },
     });

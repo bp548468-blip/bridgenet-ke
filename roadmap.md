@@ -5,3 +5,6 @@
 - [x] Add responsive styling and page metadata using burgundy and teal
 - [x] Test matching, applications, mentor progress, messaging, trials, and the job offer
 - [x] Give the user a short step-by-step testing guide
+
+- [x] Beatrice developer profile page (photo, CV, education, projects, experience, skills, contact) editable
+- [x] Login button

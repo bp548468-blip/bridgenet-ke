@@ -994,9 +994,10 @@ export function BridgeNetApp() {
                   </span>
                 </span>
               </button>
-              <span className="rounded-full bg-accent px-3 py-1.5 text-[10px] font-bold text-accent-foreground xl:hidden">
-                No login needed
-              </span>
+              <span className="xl:hidden"><span className="flex items-center gap-2">
+                <a href="/profile" className="rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground hover:opacity-90">My Profile</a>
+                <a href="/login" className="rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90">Log in</a>
+              </span></span>
             </div>
 
             <nav aria-label="Main navigation" className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1.5 lg:grid-cols-4">
@@ -1022,10 +1023,10 @@ export function BridgeNetApp() {
               ))}
             </nav>
 
-            <div className="hidden items-center gap-2 text-xs font-semibold text-muted-foreground xl:flex">
-              <span className="size-2 rounded-full bg-secondary" />
-              No login needed
-            </div>
+            <div className="hidden xl:flex"><span className="flex items-center gap-2">
+                <a href="/profile" className="rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground hover:opacity-90">My Profile</a>
+                <a href="/login" className="rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-90">Log in</a>
+              </span></div>
           </div>
         </div>
       </header>
